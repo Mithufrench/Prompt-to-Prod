@@ -1,0 +1,7 @@
+[p2p_agent]
+agent-server-1 ansible_host=10.0.1.10 app_repo_url=https://github.com/your-org/prompt-to-prod.git
+agent-server-2 ansible_host=10.0.1.11 app_repo_url=https://github.com/your-org/prompt-to-prod.git
+
+[all:vars]
+ansible_user=ubuntu
+ansible_python_interpreter=/usr/bin/python3

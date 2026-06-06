@@ -1,0 +1,111 @@
+---
+- name: Configure P2P Agent Server
+  hosts: p2p_agent
+  become: yes
+  vars:
+    docker_version: "latest"
+    python_version: "3.11"
+    app_user: "p2p"
+    app_home: "/opt/p2p"
+
+  tasks:
+    - name: Update system packages
+      apt:
+        update_cache: yes
+        upgrade: dist
+      when: ansible_os_family == "Debian"
+
+    - name: Install dependencies
+      apt:
+        name:
+          - python{{ python_version }}
+          - python{{ python_version }}-venv
+          - python{{ python_version }}-dev
+          - curl
+          - wget
+          - git
+          - htop
+          - prometheus-node-exporter
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Install Docker
+      shell: curl -fsSL https://get.docker.com | sh
+      args:
+        creates: /usr/bin/docker
+
+    - name: Create application user
+      user:
+        name: "{{ app_user }}"
+        shell: /bin/bash
+        createhome: yes
+        home: "{{ app_home }}"
+
+    - name: Add user to docker group
+      user:
+        name: "{{ app_user }}"
+        groups: docker
+        append: yes
+
+    - name: Create application directory
+      file:
+        path: "{{ app_home }}"
+        state: directory
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: 0755
+
+    - name: Clone application repository
+      git:
+        repo: "{{ app_repo_url }}"
+        dest: "{{ app_home }}/app"
+        version: main
+      become_user: "{{ app_user }}"
+
+    - name: Create Python virtual environment
+      shell: python{{ python_version }} -m venv {{ app_home }}/venv
+      become_user: "{{ app_user }}"
+      args:
+        creates: "{{ app_home }}/venv/bin/python"
+
+    - name: Install Python dependencies
+      pip:
+        requirements: "{{ app_home }}/app/ai-agent/requirements.txt"
+        virtualenv: "{{ app_home }}/venv"
+      become_user: "{{ app_user }}"
+
+    - name: Create systemd service
+      template:
+        src: p2p-agent.service.j2
+        dest: /etc/systemd/system/p2p-agent.service
+        mode: 0644
+
+    - name: Enable and start service
+      systemd:
+        name: p2p-agent
+        enabled: yes
+        state: started
+        daemon_reload: yes
+
+    - name: Configure UFW firewall
+      ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: tcp
+      loop:
+        - 8000
+        - 3000
+        - 9090
+        - 3001
+
+    - name: Start node exporter
+      systemd:
+        name: prometheus-node-exporter
+        enabled: yes
+        state: started
+
+  handlers:
+    - name: restart p2p agent
+      systemd:
+        name: p2p-agent
+        state: restarted

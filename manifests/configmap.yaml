@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ai-agent-config
+  namespace: ai-agent
+data:
+  LOG_LEVEL: "INFO"
+  ENVIRONMENT: "production"
+  AGENT_TIMEOUT: "30"
