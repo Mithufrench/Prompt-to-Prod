@@ -15,7 +15,6 @@ ansible/
 manifests/
 monitoring/
 gitops/
-frontend/
 .vscode
 .idea
 *.bak
