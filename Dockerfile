@@ -15,7 +15,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY ai-agent/main.py .
 COPY ai-agent/config.py .
 
-# Copy frontend files
+# Copy frontend files - .dockerignore has been fixed to include frontend/
 COPY frontend/ ./frontend/
 
 # Create non-root user
