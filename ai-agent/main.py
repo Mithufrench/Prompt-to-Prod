@@ -3,13 +3,27 @@ Lightweight AI Agent with FastAPI
 No external API dependencies required
 """
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import logging
+import os
+from pathlib import Path
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="AI Agent API", version="2.0.0")
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class QueryRequest(BaseModel):
     query: str
@@ -31,6 +45,10 @@ def process_query(query: str) -> str:
         return "I can help with Terraform infrastructure. Ask me anything!"
     elif "kubernetes" in query_lower:
         return "I can help with Kubernetes deployments and commands."
+    elif "docker" in query_lower:
+        return "I can help with Docker containerization. What do you want to know?"
+    elif "devops" in query_lower:
+        return "DevOps is my specialty! I can help with CI/CD, infrastructure, automation, and more."
     else:
         return f"You asked: {query}. I'm ready to assist with DevOps tasks!"
 
@@ -59,9 +77,16 @@ async def metrics():
         "agent_status": "running"
     }
 
+# Serve static frontend files
+frontend_path = Path(__file__).parent.parent / "frontend"
+
 @app.get("/")
 async def root():
-    """Root endpoint"""
+    """Root endpoint - serve frontend or API info"""
+    index_file = frontend_path / "index.html"
+    if index_file.exists():
+        return FileResponse(str(index_file), media_type="text/html")
+    # Fallback to API response if frontend not found
     return {
         "message": "AI Agent API",
         "docs": "/docs",
@@ -74,9 +99,17 @@ async def root():
         }
     }
 
+# Mount frontend static files
+if frontend_path.exists():
+    app.mount("/static", StaticFiles(directory=str(frontend_path)), name="static")
+    logger.info(f"Frontend files mounted from {frontend_path}")
+else:
+    logger.warning(f"Frontend directory not found at {frontend_path}")
+
 if __name__ == "__main__":
     import uvicorn
-    import os
     port = int(os.getenv("PORT", 8000))
     logger.info(f"Starting AI Agent API on port {port}...")
+    logger.info(f"Frontend available at http://0.0.0.0:{port}/")
+    logger.info(f"API Docs available at http://0.0.0.0:{port}/docs")
     uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")

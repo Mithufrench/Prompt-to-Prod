@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt-to-Prod - AI DevOps Platform</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                <span class="logo-icon">⚡</span>
+                <span class="logo-text">Prompt-to-Prod</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="#home" class="nav-link active">Home</a></li>
+                <li><a href="#features" class="nav-link">Features</a></li>
+                <li><a href="#dashboard" class="nav-link">Dashboard</a></li>
+                <li><a href="#docs" class="nav-link">Docs</a></li>
+                <li><a href="#contact" class="nav-link">Contact</a></li>
+            </ul>
+            <div class="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="hero-content">
+            <h1 class="hero-title">AI-Powered DevOps Intelligence</h1>
+            <p class="hero-subtitle">Automate your infrastructure with intelligent AI assistant</p>
+            <div class="hero-buttons">
+                <button class="btn btn-primary" onclick="document.getElementById('dashboard').scrollIntoView({behavior: 'smooth'})">
+                    Try Dashboard
+                </button>
+                <button class="btn btn-secondary" onclick="document.getElementById('docs').scrollIntoView({behavior: 'smooth'})">
+                    View API Docs
+                </button>
+            </div>
+        </div>
+        <div class="hero-illustration">
+            <div class="floating-card">
+                <div class="card-icon">🤖</div>
+                <div class="card-text">AI Agent</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <h2>Powerful Features</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🚀</div>
+                <h3>Fast Deployment</h3>
+                <p>Deploy your infrastructure in seconds with intelligent automation</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🤖</div>
+                <h3>AI Assistant</h3>
+                <p>Get instant help with DevOps tasks and infrastructure questions</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📊</div>
+                <h3>Real-time Metrics</h3>
+                <p>Monitor your application with Prometheus metrics and health checks</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔧</div>
+                <h3>Infrastructure as Code</h3>
+                <p>Support for Terraform, Kubernetes, and Docker configurations</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <h3>Lightning Fast</h3>
+                <p>Optimized for performance with minimal latency</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔒</div>
+                <h3>Secure & Reliable</h3>
+                <p>Enterprise-grade security with auto-restart and health monitoring</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Dashboard Section -->
+    <section id="dashboard" class="dashboard">
+        <h2>Interactive Dashboard</h2>
+        <div class="dashboard-container">
+            <div class="dashboard-left">
+                <div class="status-panel">
+                    <h3>System Status</h3>
+                    <div class="status-item">
+                        <span class="status-label">API Status:</span>
+                        <span class="status-badge status-online" id="api-status">● Online</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Health:</span>
+                        <span class="status-badge status-healthy" id="health-status">● Healthy</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="status-label">Version:</span>
+                        <span class="status-value" id="version-status">2.0.0</span>
+                    </div>
+                </div>
+
+                <div class="chat-panel">
+                    <h3>Chat with AI Agent</h3>
+                    <div class="chat-messages" id="chat-messages">
+                        <div class="message bot-message">
+                            <div class="message-content">Hello! I'm your AI DevOps assistant. Ask me anything about infrastructure, deployment, or DevOps best practices!</div>
+                        </div>
+                    </div>
+                    <div class="chat-input-area">
+                        <input type="text" id="chat-input" class="chat-input" placeholder="Ask me anything...">
+                        <button onclick="sendMessage()" class="chat-send">Send</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-right">
+                <div class="metrics-panel">
+                    <h3>API Endpoints</h3>
+                    <div class="endpoint-item">
+                        <code class="endpoint">GET /health</code>
+                        <span class="status-badge status-online">Active</span>
+                    </div>
+                    <div class="endpoint-item">
+                        <code class="endpoint">POST /chat</code>
+                        <span class="status-badge status-online">Active</span>
+                    </div>
+                    <div class="endpoint-item">
+                        <code class="endpoint">GET /metrics</code>
+                        <span class="status-badge status-online">Active</span>
+                    </div>
+                    <div class="endpoint-item">
+                        <code class="endpoint">GET /docs</code>
+                        <span class="status-badge status-online">Active</span>
+                    </div>
+                </div>
+
+                <div class="quick-actions">
+                    <h3>Quick Actions</h3>
+                    <button class="action-btn" onclick="checkHealth()">
+                        <span class="action-icon">🏥</span>
+                        Check Health
+                    </button>
+                    <button class="action-btn" onclick="getMetrics()">
+                        <span class="action-icon">📊</span>
+                        View Metrics
+                    </button>
+                    <button class="action-btn" onclick="openAPIDocs()">
+                        <span class="action-icon">📖</span>
+                        API Docs
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Docs Section -->
+    <section id="docs" class="docs">
+        <h2>API Documentation</h2>
+        <div class="docs-container">
+            <div class="doc-item">
+                <h3>GET /health</h3>
+                <p class="doc-description">Check the health status of the API</p>
+                <pre class="doc-code">curl https://api.prompt-to-prod.com/health</pre>
+                <div class="doc-response">
+                    <strong>Response:</strong>
+                    <pre>{
+  "status": "healthy",
+  "service": "ai-agent",
+  "version": "2.0.0"
+}</pre>
+                </div>
+            </div>
+
+            <div class="doc-item">
+                <h3>POST /chat</h3>
+                <p class="doc-description">Chat with the AI DevOps assistant</p>
+                <pre class="doc-code">curl -X POST https://api.prompt-to-prod.com/chat \
+  -H "Content-Type: application/json" \
+  -d '{"query":"How do I deploy with Kubernetes?"}'</pre>
+                <div class="doc-response">
+                    <strong>Response:</strong>
+                    <pre>{
+  "response": "I can help with Kubernetes deployments...",
+  "status": "success"
+}</pre>
+                </div>
+            </div>
+
+            <div class="doc-item">
+                <h3>GET /metrics</h3>
+                <p class="doc-description">Get Prometheus metrics</p>
+                <pre class="doc-code">curl https://api.prompt-to-prod.com/metrics</pre>
+                <div class="doc-response">
+                    <strong>Response:</strong>
+                    <pre>{
+  "agent_requests_total": 0,
+  "agent_errors_total": 0,
+  "agent_status": "running"
+}</pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="contact">
+        <h2>Get Started</h2>
+        <div class="contact-content">
+            <p>Ready to automate your DevOps workflow?</p>
+            <div class="contact-buttons">
+                <a href="#dashboard" class="btn btn-primary">Open Dashboard</a>
+                <a href="https://github.com/Mithufrench/Prompt-to-Prod" class="btn btn-secondary">GitHub Repository</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; 2024 Prompt-to-Prod. All rights reserved.</p>
+            <div class="footer-links">
+                <a href="#home">Home</a>
+                <a href="#features">Features</a>
+                <a href="#dashboard">Dashboard</a>
+                <a href="#docs">Docs</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
