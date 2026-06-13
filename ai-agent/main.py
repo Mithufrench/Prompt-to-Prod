@@ -76,5 +76,7 @@ async def root():
 
 if __name__ == "__main__":
     import uvicorn
-    logger.info("Starting AI Agent API...")
-    uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
+    import os
+    port = int(os.getenv("PORT", 8000))
+    logger.info(f"Starting AI Agent API on port {port}...")
+    uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
