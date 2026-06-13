@@ -77,16 +77,19 @@ async def metrics():
         "agent_status": "running"
     }
 
-# Frontend path - Fixed to work in both local and Docker environments
+# Frontend path - always /app/frontend in the container (as copied by Dockerfile)
+# Fall back to a sibling `frontend/` directory for local development
+CONTAINER_FRONTEND = Path("/app/frontend")
 app_dir = Path(__file__).parent
-if (app_dir.parent / "frontend").exists():
-    # Running from root (local development with docker-compose context = .)
-    frontend_path = app_dir.parent / "frontend"
+
+if CONTAINER_FRONTEND.exists():
+    frontend_path = CONTAINER_FRONTEND
 else:
-    # Running in container (frontend is in same directory as main.py)
     frontend_path = app_dir / "frontend"
 
 logger.info(f"Using frontend path: {frontend_path}")
+logger.info(f"frontend_path exists: {frontend_path.exists()}")
+logger.info(f"index.html exists: {(frontend_path / 'index.html').exists()}")
 
 # Mount frontend static files FIRST
 if frontend_path.exists():
@@ -100,19 +103,20 @@ else:
 async def root():
     """Root endpoint - serve frontend HTML"""
     index_file = frontend_path / "index.html"
+    logger.info(f"Root request: looking for index.html at {index_file} (exists={index_file.exists()})")
     if index_file.exists():
         try:
-            with open(index_file, 'r', encoding='utf-8') as f:
+            with open(index_file, "r", encoding="utf-8") as f:
                 html_content = f.read()
             logger.info(f"Serving frontend HTML from {index_file}")
-            return html_content
+            return HTMLResponse(content=html_content, status_code=200)
         except Exception as e:
             logger.error(f"Error reading index.html: {str(e)}")
-            return "<h1>Error loading website</h1>"
+            return HTMLResponse(content="<h1>Error loading website</h1>", status_code=500)
     else:
         logger.warning(f"index.html not found at {index_file}")
         # Fallback API response
-        return """
+        return HTMLResponse(content="""
         <h1>AI Agent API</h1>
         <p>Frontend not found. Available endpoints:</p>
         <ul>
@@ -121,7 +125,7 @@ async def root():
             <li>/chat - Chat endpoint (POST)</li>
             <li>/metrics - Prometheus metrics</li>
         </ul>
-        """
+        """, status_code=200)
 
 if __name__ == "__main__":
     import uvicorn
