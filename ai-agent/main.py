@@ -77,8 +77,16 @@ async def metrics():
         "agent_status": "running"
     }
 
-# Frontend path
-frontend_path = Path(__file__).parent.parent / "frontend"
+# Frontend path - Fixed to work in both local and Docker environments
+app_dir = Path(__file__).parent
+if (app_dir.parent / "frontend").exists():
+    # Running from root (local development with docker-compose context = .)
+    frontend_path = app_dir.parent / "frontend"
+else:
+    # Running in container (frontend is in same directory as main.py)
+    frontend_path = app_dir / "frontend"
+
+logger.info(f"Using frontend path: {frontend_path}")
 
 # Mount frontend static files FIRST
 if frontend_path.exists():
@@ -96,7 +104,7 @@ async def root():
         try:
             with open(index_file, 'r', encoding='utf-8') as f:
                 html_content = f.read()
-            logger.info("Serving frontend HTML from root")
+            logger.info(f"Serving frontend HTML from {index_file}")
             return html_content
         except Exception as e:
             logger.error(f"Error reading index.html: {str(e)}")
