@@ -26,6 +26,16 @@ function setupEventListeners() {
         });
     }
 
+    // Hero prompt input - Enter key functionality
+    const heroPromptInput = document.getElementById('hero-prompt-input');
+    if (heroPromptInput) {
+        heroPromptInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendHeroPrompt();
+            }
+        });
+    }
+
     // Smooth scrolling for nav links
     document.querySelectorAll('.nav-link').forEach(link => {
         link.addEventListener('click', (e) => {
@@ -61,6 +71,66 @@ function loadWelcomeMessage() {
     const chatMessages = document.getElementById('chat-messages');
     if (chatMessages && chatMessages.children.length === 1) {
         addBotMessage('Welcome to Prompt-to-Prod! I can help with DevOps questions. Try asking: "What is Kubernetes?" or "How do I use Docker?"');
+    }
+}
+
+// Send hero prompt - NEW FUNCTION
+async function sendHeroPrompt() {
+    const input = document.getElementById('hero-prompt-input');
+    const prompt = input.value.trim();
+
+    if (!prompt) {
+        alert('Please enter your infrastructure need');
+        return;
+    }
+
+    // Add visual feedback
+    const button = event.target;
+    const originalText = button.textContent;
+    button.textContent = '⏳ Processing...';
+    button.disabled = true;
+
+    try {
+        // Send to API
+        const response = await fetch(`${API_BASE}/chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: prompt })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        // Scroll to dashboard and show result
+        input.value = '';
+        button.textContent = originalText;
+        button.disabled = false;
+
+        // Move the prompt to chat and show dashboard
+        const chatInput = document.getElementById('chat-input');
+        if (chatInput) {
+            chatInput.value = prompt;
+        }
+        
+        // Scroll to dashboard
+        smoothScroll('dashboard');
+        
+        // Show the response in chat
+        setTimeout(() => {
+            addUserMessage(prompt);
+            addBotMessage(data.response || 'Response received. Check the dashboard for details.');
+            messageCount++;
+            updateMetrics();
+        }, 500);
+
+    } catch (error) {
+        console.error('Hero prompt error:', error);
+        button.textContent = originalText;
+        button.disabled = false;
+        alert('❌ Error: ' + (error.message || 'Could not process your request'));
     }
 }
 
@@ -281,6 +351,11 @@ async function testAPI() {
         console.error('API test error:', error);
         alert('❌ API Test Failed\n\n' + error.message);
     }
+}
+
+// ScrollTo helper function
+function scrollTo(sectionId) {
+    smoothScroll(sectionId);
 }
 
 // Console logging for debugging
