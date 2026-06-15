@@ -27,6 +27,13 @@
     <section id="home" class="hero">
         <div class="hero-content">
             <h1>AI DevOps Platform</h1>
+            
+            <!-- Prompt Box - New Addition -->
+            <div class="hero-prompt-box">
+                <input type="text" id="hero-prompt-input" class="hero-prompt-input" placeholder="Describe your infrastructure need..." />
+                <button class="btn btn-primary btn-prompt" onclick="sendHeroPrompt()">Generate →</button>
+            </div>
+            
             <p>Automate infrastructure with intelligent AI assistance</p>
             <div class="hero-buttons">
                 <button class="btn btn-primary" onclick="scrollTo('dashboard')">Try Now</button>
