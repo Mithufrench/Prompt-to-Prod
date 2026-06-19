@@ -1,22 +1,18 @@
-"""
-Prompt-to-Prod - AI DevOps Platform
-Enhanced Backend with Proper Static File Serving
-"""
-from fastapi import FastAPI
-from starlette.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import logging
 import os
-from pathlib import Path
+from groq import Groq
+import logging
+import time
 
+# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="Prompt-to-Prod AI DevOps", version="2.0.0")
+app = FastAPI(title="Prompt-to-Prod AI DevOps Platform")
 
-# Add CORS middleware
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -25,97 +21,105 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Data Models
-class QueryRequest(BaseModel):
+# Groq Client
+groq_client = None
+
+def get_groq_client():
+    global groq_client
+    if groq_client is None:
+        api_key = os.getenv("GROQ_API_KEY")
+        if not api_key:
+            logger.warning("GROQ_API_KEY not found! Using fallback responses.")
+            return None
+        groq_client = Groq(api_key=api_key)
+    return groq_client
+
+# Models
+class ChatRequest(BaseModel):
     query: str
 
-class QueryResponse(BaseModel):
-    response: str
-    status: str = "success"
+class HealthResponse(BaseModel):
+    status: str
+    version: str
+    message: str
 
-# AI Knowledge Base
-AI_RESPONSES = {
-    "docker": "Docker is a containerization platform that allows you to package applications with all their dependencies into containers. Key concepts:\n• Images: Templates for containers\n• Containers: Running instances of images\n• Docker Compose: Orchestrate multiple containers\n• Best practices: Use multi-stage builds, keep images small",
-    "kubernetes": "Kubernetes (K8s) is a container orchestration platform. Key features:\n• Auto-scaling: Scale pods based on demand\n• Load balancing: Distribute traffic\n• Self-healing: Restart failed pods\n• Rolling updates: Deploy without downtime\n• Namespaces: Organize resources",
-    "terraform": "Terraform is Infrastructure as Code tool. Key points:\n• HCL: HashiCorp Configuration Language\n• Resources: Define cloud infrastructure\n• Modules: Reusable components\n• State: Tracks infrastructure state\n• Apply/Plan: Deploy changes safely",
-    "ci/cd": "CI/CD automates software delivery. Pipeline stages:\n• Build: Compile and test code\n• Test: Run automated tests\n• Stage: Deploy to staging environment\n• Production: Deploy to production\n• Monitor: Track application health",
-    "deployment": "Deployment strategies:\n• Blue-Green: Two identical environments\n• Canary: Gradually release to users\n• Rolling: Update instances one by one\n• Shadow: Test in production without affecting users",
-    "devops": "DevOps combines development and operations. Key practices:\n• Automation: Automate repetitive tasks\n• Infrastructure as Code: Manage infrastructure like code\n• Continuous Integration: Frequent code integration\n• Continuous Deployment: Automated releases\n• Monitoring: Track system health and metrics",
-    "monitoring": "Application monitoring tools:\n• Prometheus: Metrics collection\n• Grafana: Visualization and dashboards\n• ELK Stack: Logging (Elasticsearch, Logstash, Kibana)\n• Datadog: Cloud monitoring\n• New Relic: APM and monitoring",
-    "scaling": "Scaling strategies:\n• Horizontal: Add more servers\n• Vertical: Upgrade existing servers\n• Auto-scaling: Automatically adjust based on load\n• Load balancing: Distribute traffic\n• Caching: Reduce database queries",
-}
+# System Prompt - Makes AI very DevOps-focused
+SYSTEM_PROMPT = """
+You are an expert DevOps Engineer and AI Assistant for "Prompt-to-Prod" platform.
+Your goal is to help users with real, production-grade DevOps solutions.
 
-# Process query
-def process_query(query: str) -> str:
-    """Process query with enhanced AI knowledge base"""
-    query_lower = query.lower()
-    
-    # Check for specific topics
-    for keyword, response in AI_RESPONSES.items():
-        if keyword in query_lower:
-            return response
-    
-    # General greetings
-    if any(word in query_lower for word in ["hello", "hi", "hey", "greetings"]):
-        return "Hello! I'm the Prompt-to-Prod AI DevOps assistant. Ask me about Docker, Kubernetes, Terraform, CI/CD, deployment strategies, monitoring, scaling, or any DevOps topic!"
-    
-    # Generic response
-    return f"You asked: {query}\n\nI'm trained on DevOps topics like:\n• Docker & Containerization\n• Kubernetes & Orchestration\n• Terraform & Infrastructure as Code\n• CI/CD Pipelines\n• Deployment Strategies\n• Monitoring & Observability\n• Scaling & Performance\n\nAsk me about any of these topics for detailed information!"
+Core strengths:
+- Generate complete CI/CD pipelines (GitHub Actions, GitLab CI, Jenkins)
+- Write Terraform / OpenTofu IaC code
+- Create Dockerfiles and docker-compose files
+- Generate Kubernetes manifests (Deployment, Service, Ingress, Helm charts)
+- Give security best practices, monitoring (Prometheus + Grafana), logging
+- Explain concepts clearly with examples
 
-# API Endpoints
+Always be helpful, concise, and provide copy-paste ready code when possible.
+Use markdown formatting for readability.
+"""
+
 @app.get("/health")
-async def health_check():
-    """Health check endpoint"""
-    return {
-        "status": "healthy",
-        "service": "ai-devops-platform",
-        "version": "2.0.0"
-    }
+async def health():
+    return HealthResponse(
+        status="healthy",
+        version="2.1.0",
+        message="Prompt-to-Prod AI DevOps Platform is running with Groq LLM"
+    )
 
-@app.post("/chat", response_model=QueryResponse)
-async def chat(request: QueryRequest):
-    """Chat with AI assistant"""
+@app.post("/chat")
+async def chat(request: ChatRequest):
+    start_time = time.time()
+    
+    client = get_groq_client()
+    
+    if not client:
+        # Fallback if no API key
+        return {
+            "response": "⚠️ Groq API key is not configured. Please set GROQ_API_KEY environment variable.\n\nIn the meantime, try more specific questions like:\n- Generate a CI/CD pipeline for a Node.js app\n- Write Terraform for an S3 bucket"
+        }
+
     try:
-        logger.info(f"Query: {request.query}")
-        response = process_query(request.query)
-        return QueryResponse(response=response, status="success")
+        completion = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",   # Excellent balance of speed & quality
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": request.query}
+            ],
+            temperature=0.7,
+            max_tokens=1200,
+            top_p=0.9,
+        )
+        
+        response_text = completion.choices[0].message.content.strip()
+        
+        logger.info(f"Chat request processed in {time.time() - start_time:.2f}s")
+        
+        return {"response": response_text}
+
     except Exception as e:
-        logger.error(f"Error: {str(e)}")
-        return QueryResponse(response=f"Error: {str(e)}", status="error")
+        logger.error(f"Groq API error: {str(e)}")
+        raise HTTPException(status_code=500, detail="AI service temporarily unavailable")
 
 @app.get("/metrics")
 async def metrics():
-    """Get system metrics"""
     return {
         "agent_requests_total": 42,
         "agent_errors_total": 0,
-        "agent_status": "running"
+        "agent_status": "running",
+        "ai_provider": "groq",
+        "uptime": "online"
     }
 
-# Setup static files - CRITICAL FIX
-app_dir = Path(__file__).parent
-if (app_dir.parent / "frontend").exists():
-    frontend_path = app_dir.parent / "frontend"
-else:
-    frontend_path = app_dir / "frontend"
-
-logger.info(f"Frontend path: {frontend_path}")
-logger.info(f"Frontend exists: {frontend_path.exists()}")
-
-# Mount static files at root
-if frontend_path.exists():
-    try:
-        app.mount("/", StaticFiles(directory=str(frontend_path), html=True), name="static")
-        logger.info(f"✅ Static files mounted at / from {frontend_path}")
-        files = list((frontend_path).glob("*"))
-        logger.info(f"Files in frontend: {[f.name for f in files]}")
-    except Exception as e:
-        logger.error(f"Error mounting static files: {e}")
-else:
-    logger.error(f"❌ Frontend directory does not exist at {frontend_path}")
+@app.get("/")
+async def root():
+    return {
+        "message": "Welcome to Prompt-to-Prod AI DevOps Platform",
+        "docs": "/docs",
+        "ai": "Groq Powered"
+    }
 
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.getenv("PORT", 8000))
-    logger.info(f"🚀 Starting on port {port}")
-    uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
+    uvicorn.run(app, host="0.0.0.0", port=8000)
