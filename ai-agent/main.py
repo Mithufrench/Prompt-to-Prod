@@ -1,18 +1,20 @@
 """
-Prompt-to-Prod - AI DevOps Platform with Groq LLM
-Enhanced Backend with Groq Integration
-Railway-compatible configuration
+Prompt-to-Prod - AI DevOps Platform with Advanced Groq LLM Integration
+Enhanced AI Agent for Real Architecture Outcomes
 """
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket
 from starlette.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import logging
 import os
 import sys
+import json
 from pathlib import Path
+from typing import Optional, List, Dict
 from groq import Groq
+import asyncio
 
 # Configure logging
 logging.basicConfig(
@@ -22,7 +24,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="Prompt-to-Prod AI DevOps", version="2.0.0")
+app = FastAPI(title="Prompt-to-Prod AI DevOps", version="3.0.0")
 
 # Add CORS middleware
 app.add_middleware(
@@ -42,84 +44,398 @@ if not GROQ_API_KEY:
     client = None
 else:
     client = Groq(api_key=GROQ_API_KEY)
-    logger.info("✅ Groq client initialized")
+    logger.info("✅ Groq client initialized with Mixtral 8x7B model")
 
-# Data Models
+# ==================== AI SYSTEM PROMPTS ====================
+
+SYSTEM_PROMPTS = {
+    "devops_expert": """You are an expert DevOps Engineer and Cloud Architect. Your role is to provide:
+1. Production-ready infrastructure designs
+2. Best practices for containerization and orchestration
+3. CI/CD pipeline recommendations
+4. Security and compliance guidance
+5. Cost optimization strategies
+6. Performance tuning advice
+
+Always provide:
+- Specific, actionable recommendations
+- Real-world considerations and trade-offs
+- Code examples where applicable
+- Links to official documentation when relevant
+Format responses with clear sections and bullet points.""",
+
+    "architect": """You are a Senior Software Architect specializing in cloud-native applications. Provide:
+1. System design and architecture patterns
+2. Scalability and performance considerations
+3. Data architecture and database design
+4. API design and microservices architecture
+5. Technology stack recommendations
+
+Focus on:
+- Real production scenarios
+- Trade-offs between different approaches
+- Practical implementation advice
+- Best practices from industry leaders
+Always include diagrams in text format when helpful.""",
+
+    "kubernetes_expert": """You are a Kubernetes and Container Orchestration Expert. Help with:
+1. Kubernetes cluster design and setup
+2. Pod deployment and management
+3. Service mesh integration (Istio, Linkerd)
+4. Monitoring and logging
+5. Security policies and RBAC
+6. Performance optimization
+
+Provide:
+- YAML configurations with explanations
+- Troubleshooting guidance
+- Production readiness checklists
+- Cost optimization tips""",
+
+    "infrastructure_coder": """You are an Infrastructure as Code (IaC) Expert. Specialize in:
+1. Terraform configurations for various cloud providers (AWS, GCP, Azure)
+2. CloudFormation templates
+3. Ansible playbooks
+4. ARM (Azure Resource Manager) templates
+5. Pulumi Python/Go code
+
+Requirements:
+- Production-ready code
+- Security best practices
+- State management strategies
+- Module design patterns
+- Testing approaches for IaC""",
+
+    "security_specialist": """You are a Cloud Security and DevSecOps Expert. Provide guidance on:
+1. Security architecture and zero-trust design
+2. Container and image security
+3. Secrets management
+4. Network security and firewalls
+5. Compliance (GDPR, HIPAA, SOC2, PCI-DSS)
+6. Incident response
+
+Include:
+- Specific security controls
+- Threat models and mitigation
+- Tools and technologies
+- Audit and monitoring strategies"""
+}
+
+# ==================== DATA MODELS ====================
+
+class ChatMessage(BaseModel):
+    role: str  # "user" or "assistant"
+    content: str
+
+class ConversationHistory(BaseModel):
+    messages: List[ChatMessage] = []
+    agent_type: str = "devops_expert"
+
 class QueryRequest(BaseModel):
     query: str
+    agent_type: Optional[str] = "devops_expert"
+    conversation_history: Optional[List[ChatMessage]] = None
 
 class QueryResponse(BaseModel):
     response: str
     status: str = "success"
+    agent_type: str = "devops_expert"
+    model: str = MODEL
+    tokens_used: Optional[Dict] = None
 
-# Process query using Groq LLM
-def process_query(query: str) -> str:
-    """Process query using Groq LLM"""
+class ArchitectureRequest(BaseModel):
+    """Request for architecture design"""
+    project_type: str  # web_app, microservices, data_pipeline, etc
+    requirements: str
+    constraints: Optional[str] = None
+    technologies: Optional[List[str]] = None
+
+class ArchitectureResponse(BaseModel):
+    """Response with architecture design"""
+    architecture: str
+    diagram: str
+    components: List[str]
+    recommendations: List[str]
+    next_steps: List[str]
+
+# ==================== AI PROCESSING FUNCTIONS ====================
+
+def get_system_prompt(agent_type: str) -> str:
+    """Get appropriate system prompt for agent type"""
+    return SYSTEM_PROMPTS.get(agent_type, SYSTEM_PROMPTS["devops_expert"])
+
+def process_query_with_groq(query: str, agent_type: str = "devops_expert", 
+                           conversation_history: Optional[List[ChatMessage]] = None) -> Dict:
+    """Process query using Groq with conversation history"""
     if not client:
-        return "Error: Groq API key not configured. Please set GROQ_API_KEY environment variable."
+        return {
+            "response": "Error: Groq API key not configured.",
+            "status": "error",
+            "agent_type": agent_type
+        }
     
     try:
-        logger.info(f"Query: {query}")
+        logger.info(f"Processing query with agent: {agent_type}")
         
-        # System prompt for DevOps expertise
-        system_prompt = """You are an expert DevOps engineer and AI assistant for the Prompt-to-Prod platform. 
-You have deep knowledge of Docker, Kubernetes, Terraform, CI/CD, deployment strategies, monitoring, and cloud infrastructure.
-Provide clear, concise, and practical answers to DevOps and infrastructure questions.
-Always include best practices and real-world considerations."""
+        # Build messages list including conversation history
+        messages = []
         
-        message = client.messages.create(
+        if conversation_history:
+            for msg in conversation_history:
+                messages.append({
+                    "role": msg.role,
+                    "content": msg.content
+                })
+        
+        # Add current query
+        messages.append({
+            "role": "user",
+            "content": query
+        })
+        
+        system_prompt = get_system_prompt(agent_type)
+        
+        # Call Groq API with streaming for better UX
+        response = client.messages.create(
             model=MODEL,
-            max_tokens=1024,
+            max_tokens=2048,
             system=system_prompt,
-            messages=[
-                {"role": "user", "content": query}
-            ]
+            messages=messages
         )
         
-        response = message.content[0].text
-        logger.info(f"Response generated: {response[:100]}...")
-        return response
+        result_text = response.content[0].text
+        logger.info(f"Response generated by {agent_type} agent")
+        
+        return {
+            "response": result_text,
+            "status": "success",
+            "agent_type": agent_type,
+            "model": MODEL,
+            "tokens_used": {
+                "input": response.usage.input_tokens if hasattr(response, 'usage') else 0,
+                "output": response.usage.output_tokens if hasattr(response, 'usage') else 0
+            }
+        }
         
     except Exception as e:
         logger.error(f"Error calling Groq API: {str(e)}")
-        return f"Error processing query: {str(e)}"
+        return {
+            "response": f"Error processing query: {str(e)}",
+            "status": "error",
+            "agent_type": agent_type
+        }
 
-# API Endpoints
+def design_architecture(project_type: str, requirements: str, 
+                       constraints: Optional[str] = None) -> Dict:
+    """Generate architecture design using AI"""
+    if not client:
+        return {"status": "error", "message": "Groq not configured"}
+    
+    try:
+        prompt = f"""Design a production-ready architecture for:
+
+Project Type: {project_type}
+Requirements: {requirements}
+{f'Constraints: {constraints}' if constraints else ''}
+
+Provide a comprehensive architecture including:
+1. System architecture overview (describe as ASCII diagram if helpful)
+2. Key components and their responsibilities
+3. Data flow between components
+4. Technology recommendations
+5. Scalability approach
+6. Monitoring and observability strategy
+7. Security considerations
+8. Cost optimization tips
+9. Deployment strategy
+10. Next implementation steps
+
+Format with clear sections and actionable recommendations."""
+
+        response = client.messages.create(
+            model=MODEL,
+            max_tokens=3000,
+            system=SYSTEM_PROMPTS["architect"],
+            messages=[{"role": "user", "content": prompt}]
+        )
+        
+        return {
+            "status": "success",
+            "architecture": response.content[0].text
+        }
+        
+    except Exception as e:
+        logger.error(f"Architecture design error: {str(e)}")
+        return {
+            "status": "error",
+            "message": str(e)
+        }
+
+# ==================== API ENDPOINTS ====================
+
 @app.get("/health")
 async def health_check():
-    """Health check endpoint - used by Railway"""
-    logger.info("Health check requested")
+    """Health check endpoint"""
     return {
         "status": "healthy",
         "service": "ai-devops-platform",
-        "version": "2.0.0",
+        "version": "3.0.0",
         "llm": "groq",
-        "model": MODEL
+        "model": MODEL,
+        "ai_agents": list(SYSTEM_PROMPTS.keys())
     }
 
 @app.post("/chat", response_model=QueryResponse)
 async def chat(request: QueryRequest):
-    """Chat with AI assistant powered by Groq"""
+    """Chat with AI assistant powered by Groq - Single turn"""
     try:
-        logger.info(f"Processing query: {request.query}")
-        response = process_query(request.query)
-        return QueryResponse(response=response, status="success")
+        logger.info(f"Chat request: {request.query[:100]}...")
+        
+        result = process_query_with_groq(
+            query=request.query,
+            agent_type=request.agent_type,
+            conversation_history=request.conversation_history
+        )
+        
+        return QueryResponse(**result)
+        
     except Exception as e:
-        logger.error(f"Error: {str(e)}")
-        return QueryResponse(response=f"Error: {str(e)}", status="error")
+        logger.error(f"Chat error: {str(e)}")
+        return QueryResponse(
+            response=f"Error: {str(e)}",
+            status="error",
+            agent_type=request.agent_type
+        )
+
+@app.post("/chat/stream")
+async def chat_stream(request: QueryRequest):
+    """Streaming chat endpoint for real-time responses"""
+    try:
+        if not client:
+            return {"error": "Groq not configured"}
+        
+        logger.info(f"Streaming chat request: {request.query[:100]}...")
+        
+        messages = []
+        if request.conversation_history:
+            for msg in request.conversation_history:
+                messages.append({
+                    "role": msg.role,
+                    "content": msg.content
+                })
+        
+        messages.append({
+            "role": "user",
+            "content": request.query
+        })
+        
+        system_prompt = get_system_prompt(request.agent_type)
+        
+        # Create streaming response
+        stream = client.messages.stream(
+            model=MODEL,
+            max_tokens=2048,
+            system=system_prompt,
+            messages=messages
+        )
+        
+        async def generate():
+            try:
+                with stream as s:
+                    for text in s.text_stream:
+                        yield f"data: {json.dumps({'chunk': text})}\n\n"
+            except Exception as e:
+                logger.error(f"Stream error: {str(e)}")
+                yield f"data: {json.dumps({'error': str(e)})}\n\n"
+        
+        return StreamingResponse(generate(), media_type="text/event-stream")
+        
+    except Exception as e:
+        logger.error(f"Stream error: {str(e)}")
+        return {"error": str(e)}
+
+@app.post("/architecture/design")
+async def design_app_architecture(request: ArchitectureRequest):
+    """Design architecture for your application"""
+    try:
+        logger.info(f"Architecture design request for: {request.project_type}")
+        
+        result = design_architecture(
+            project_type=request.project_type,
+            requirements=request.requirements,
+            constraints=request.constraints
+        )
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Architecture error: {str(e)}")
+        return {"status": "error", "message": str(e)}
+
+@app.get("/agents")
+async def list_agents():
+    """List available AI agents"""
+    return {
+        "agents": [
+            {
+                "type": agent_type,
+                "description": f"Agent specialized in {agent_type.replace('_', ' ')}"
+            }
+            for agent_type in SYSTEM_PROMPTS.keys()
+        ]
+    }
+
+@app.post("/agents/recommend")
+async def recommend_agent(query: QueryRequest):
+    """Recommend best agent for the query"""
+    try:
+        if not client:
+            return {"recommended_agent": "devops_expert"}
+        
+        agent_selector_prompt = """Based on this query, recommend which specialist agent should handle it.
+Choose from: devops_expert, architect, kubernetes_expert, infrastructure_coder, security_specialist
+
+Return ONLY the agent type name, nothing else."""
+
+        response = client.messages.create(
+            model=MODEL,
+            max_tokens=50,
+            system=agent_selector_prompt,
+            messages=[{"role": "user", "content": query.query}]
+        )
+        
+        recommended = response.content[0].text.strip().lower()
+        
+        # Validate recommendation
+        if recommended not in SYSTEM_PROMPTS:
+            recommended = "devops_expert"
+        
+        return {
+            "query": query.query[:100],
+            "recommended_agent": recommended,
+            "reason": f"This query is best handled by the {recommended} agent"
+        }
+        
+    except Exception as e:
+        logger.error(f"Agent recommendation error: {str(e)}")
+        return {"recommended_agent": "devops_expert", "error": str(e)}
 
 @app.get("/metrics")
 async def metrics():
     """Get system metrics"""
     return {
-        "agent_requests_total": 42,
+        "agent_requests_total": 0,
         "agent_errors_total": 0,
         "agent_status": "running",
         "llm_provider": "groq",
-        "model": MODEL
+        "model": MODEL,
+        "available_agents": len(SYSTEM_PROMPTS),
+        "streaming_enabled": True,
+        "conversation_support": True
     }
 
-# Setup static files
+# ==================== STATIC FILES ====================
+
 app_dir = Path(__file__).parent
 if (app_dir.parent / "frontend").exists():
     frontend_path = app_dir.parent / "frontend"
@@ -127,42 +443,44 @@ else:
     frontend_path = app_dir / "frontend"
 
 logger.info(f"Frontend path: {frontend_path}")
-logger.info(f"Frontend exists: {frontend_path.exists()}")
 
-# Mount static files at root
 if frontend_path.exists():
     try:
         app.mount("/", StaticFiles(directory=str(frontend_path), html=True), name="static")
-        logger.info(f"✅ Static files mounted at / from {frontend_path}")
-        files = list((frontend_path).glob("*"))
-        logger.info(f"Files in frontend: {[f.name for f in files]}")
+        logger.info(f"✅ Static files mounted at /")
     except Exception as e:
         logger.error(f"Error mounting static files: {e}")
-else:
-    logger.error(f"❌ Frontend directory does not exist at {frontend_path}")
+
+# ==================== STARTUP ====================
 
 if __name__ == "__main__":
     import uvicorn
     
-    # Read PORT from Railway environment variable
-    # Railway sets PORT to a random port (e.g., 47380)
-    # This app MUST listen on that PORT for healthchecks to work
     port = int(os.getenv("PORT", 8000))
     
-    # Print startup info
-    logger.info(f"=" * 50)
-    logger.info(f"🚀 Starting Prompt-to-Prod AI DevOps Agent")
+    logger.info(f"=" * 60)
+    logger.info(f"🚀 Starting Prompt-to-Prod AI DevOps Agent v3.0")
     logger.info(f"🔧 Environment: {os.getenv('ENVIRONMENT', 'development')}")
     logger.info(f"📊 Port: {port}")
     logger.info(f"🤖 LLM Model: {MODEL}")
     logger.info(f"🔑 Groq API Key: {'✅ Set' if GROQ_API_KEY else '❌ Not set'}")
-    logger.info(f"=" * 50)
+    logger.info(f"🧠 AI Agents Available: {len(SYSTEM_PROMPTS)}")
+    logger.info(f"  - DevOps Expert")
+    logger.info(f"  - Software Architect")
+    logger.info(f"  - Kubernetes Expert")
+    logger.info(f"  - Infrastructure Coder")
+    logger.info(f"  - Security Specialist")
+    logger.info(f"✨ Features:")
+    logger.info(f"  - Multi-agent AI system")
+    logger.info(f"  - Conversation history support")
+    logger.info(f"  - Streaming responses")
+    logger.info(f"  - Architecture design")
+    logger.info(f"  - Agent recommendation")
+    logger.info(f"=" * 60)
     
-    # Start Uvicorn server on the assigned port
-    # This is critical for Railway deployment
     uvicorn.run(
         app,
-        host="0.0.0.0",  # Listen on all interfaces
-        port=port,        # Use Railway's assigned PORT
+        host="0.0.0.0",
+        port=port,
         log_level="info"
     )
