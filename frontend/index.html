@@ -26,10 +26,24 @@
     <!-- Hero -->
     <section id="home" class="hero">
         <div class="hero-content">
-            <h1>AI DevOps Platform</h1>
-            <p>Automate infrastructure with intelligent AI assistance</p>
+            <h1>Prompt-to-Prod</h1>
+            <p class="hero-subtitle">AI DevOps Platform</p>
+            
+            <!-- Hero Prompt Box -->
+            <div class="hero-prompt-box">
+                <div class="prompt-input-group">
+                    <input type="text" 
+                           id="hero-prompt-input" 
+                           class="hero-prompt-input" 
+                           placeholder="Ask anything about DevOps..."
+                           onkeypress="handleHeroPromptEnter(event)">
+                    <button class="hero-prompt-button" onclick="sendHeroPrompt()">→</button>
+                </div>
+            </div>
+            
+            <p class="hero-description">Automate infrastructure with intelligent AI assistance</p>
             <div class="hero-buttons">
-                <button class="btn btn-primary" onclick="scrollTo('dashboard')">Try Now</button>
+                <button class="btn btn-primary" onclick="scrollTo('dashboard')">Try Dashboard</button>
                 <button class="btn btn-secondary" onclick="testAPI()">Test API</button>
             </div>
         </div>
