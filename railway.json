@@ -5,14 +5,19 @@
     "dockerfile": "Dockerfile"
   },
   "deploy": {
-    "numReplicas": 1,
     "restartPolicyType": "always",
+    "startCommand": "python -u ai-agent/main.py",
     "healthchecks": {
       "readiness": {
         "path": "/health",
         "initialDelaySeconds": 10,
-        "periodSeconds": 10
+        "periodSeconds": 10,
+        "timeoutSeconds": 5
       }
     }
+  },
+  "envVariables": {
+    "PYTHONUNBUFFERED": "1",
+    "PORT": "$PORT"
   }
 }

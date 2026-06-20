@@ -1,8 +1,1 @@
-[build]
-dockerfile = "Dockerfile"
-context = "."
-
-[deploy]
-restartPolicyType = "always"
-healthcheckPath = "/health"
-healthcheckTimeout = 10
+# This file is deprecated - use railway.json instead

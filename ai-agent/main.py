@@ -1,6 +1,7 @@
 """
-Prompt-to-Prod - AI DevOps Platform
-Enhanced Backend with Proper Static File Serving
+Prompt-to-Prod - AI DevOps Platform with Groq LLM
+Enhanced Backend with Groq Integration
+Railway-compatible configuration
 """
 from fastapi import FastAPI
 from starlette.staticfiles import StaticFiles
@@ -9,9 +10,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import logging
 import os
+import sys
 from pathlib import Path
+from groq import Groq
 
-logging.basicConfig(level=logging.INFO)
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    stream=sys.stdout
+)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Prompt-to-Prod AI DevOps", version="2.0.0")
@@ -25,6 +33,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Initialize Groq client
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+MODEL = os.getenv("MODEL", "mixtral-8x7b-32768")
+
+if not GROQ_API_KEY:
+    logger.warning("⚠️  GROQ_API_KEY not set. Set it as an environment variable.")
+    client = None
+else:
+    client = Groq(api_key=GROQ_API_KEY)
+    logger.info("✅ Groq client initialized")
+
 # Data Models
 class QueryRequest(BaseModel):
     query: str
@@ -33,50 +52,56 @@ class QueryResponse(BaseModel):
     response: str
     status: str = "success"
 
-# AI Knowledge Base
-AI_RESPONSES = {
-    "docker": "Docker is a containerization platform that allows you to package applications with all their dependencies into containers. Key concepts:\n• Images: Templates for containers\n• Containers: Running instances of images\n• Docker Compose: Orchestrate multiple containers\n• Best practices: Use multi-stage builds, keep images small",
-    "kubernetes": "Kubernetes (K8s) is a container orchestration platform. Key features:\n• Auto-scaling: Scale pods based on demand\n• Load balancing: Distribute traffic\n• Self-healing: Restart failed pods\n• Rolling updates: Deploy without downtime\n• Namespaces: Organize resources",
-    "terraform": "Terraform is Infrastructure as Code tool. Key points:\n• HCL: HashiCorp Configuration Language\n• Resources: Define cloud infrastructure\n• Modules: Reusable components\n• State: Tracks infrastructure state\n• Apply/Plan: Deploy changes safely",
-    "ci/cd": "CI/CD automates software delivery. Pipeline stages:\n• Build: Compile and test code\n• Test: Run automated tests\n• Stage: Deploy to staging environment\n• Production: Deploy to production\n• Monitor: Track application health",
-    "deployment": "Deployment strategies:\n• Blue-Green: Two identical environments\n• Canary: Gradually release to users\n• Rolling: Update instances one by one\n• Shadow: Test in production without affecting users",
-    "devops": "DevOps combines development and operations. Key practices:\n• Automation: Automate repetitive tasks\n• Infrastructure as Code: Manage infrastructure like code\n• Continuous Integration: Frequent code integration\n• Continuous Deployment: Automated releases\n• Monitoring: Track system health and metrics",
-    "monitoring": "Application monitoring tools:\n• Prometheus: Metrics collection\n• Grafana: Visualization and dashboards\n• ELK Stack: Logging (Elasticsearch, Logstash, Kibana)\n• Datadog: Cloud monitoring\n• New Relic: APM and monitoring",
-    "scaling": "Scaling strategies:\n• Horizontal: Add more servers\n• Vertical: Upgrade existing servers\n• Auto-scaling: Automatically adjust based on load\n• Load balancing: Distribute traffic\n• Caching: Reduce database queries",
-}
-
-# Process query
+# Process query using Groq LLM
 def process_query(query: str) -> str:
-    """Process query with enhanced AI knowledge base"""
-    query_lower = query.lower()
+    """Process query using Groq LLM"""
+    if not client:
+        return "Error: Groq API key not configured. Please set GROQ_API_KEY environment variable."
     
-    # Check for specific topics
-    for keyword, response in AI_RESPONSES.items():
-        if keyword in query_lower:
-            return response
-    
-    # General greetings
-    if any(word in query_lower for word in ["hello", "hi", "hey", "greetings"]):
-        return "Hello! I'm the Prompt-to-Prod AI DevOps assistant. Ask me about Docker, Kubernetes, Terraform, CI/CD, deployment strategies, monitoring, scaling, or any DevOps topic!"
-    
-    # Generic response
-    return f"You asked: {query}\n\nI'm trained on DevOps topics like:\n• Docker & Containerization\n• Kubernetes & Orchestration\n• Terraform & Infrastructure as Code\n• CI/CD Pipelines\n• Deployment Strategies\n• Monitoring & Observability\n• Scaling & Performance\n\nAsk me about any of these topics for detailed information!"
+    try:
+        logger.info(f"Query: {query}")
+        
+        # System prompt for DevOps expertise
+        system_prompt = """You are an expert DevOps engineer and AI assistant for the Prompt-to-Prod platform. 
+You have deep knowledge of Docker, Kubernetes, Terraform, CI/CD, deployment strategies, monitoring, and cloud infrastructure.
+Provide clear, concise, and practical answers to DevOps and infrastructure questions.
+Always include best practices and real-world considerations."""
+        
+        message = client.messages.create(
+            model=MODEL,
+            max_tokens=1024,
+            system=system_prompt,
+            messages=[
+                {"role": "user", "content": query}
+            ]
+        )
+        
+        response = message.content[0].text
+        logger.info(f"Response generated: {response[:100]}...")
+        return response
+        
+    except Exception as e:
+        logger.error(f"Error calling Groq API: {str(e)}")
+        return f"Error processing query: {str(e)}"
 
 # API Endpoints
 @app.get("/health")
 async def health_check():
-    """Health check endpoint"""
+    """Health check endpoint - used by Railway"""
+    logger.info("Health check requested")
     return {
         "status": "healthy",
         "service": "ai-devops-platform",
-        "version": "2.0.0"
+        "version": "2.0.0",
+        "llm": "groq",
+        "model": MODEL
     }
 
 @app.post("/chat", response_model=QueryResponse)
 async def chat(request: QueryRequest):
-    """Chat with AI assistant"""
+    """Chat with AI assistant powered by Groq"""
     try:
-        logger.info(f"Query: {request.query}")
+        logger.info(f"Processing query: {request.query}")
         response = process_query(request.query)
         return QueryResponse(response=response, status="success")
     except Exception as e:
@@ -89,10 +114,12 @@ async def metrics():
     return {
         "agent_requests_total": 42,
         "agent_errors_total": 0,
-        "agent_status": "running"
+        "agent_status": "running",
+        "llm_provider": "groq",
+        "model": MODEL
     }
 
-# Setup static files - CRITICAL FIX
+# Setup static files
 app_dir = Path(__file__).parent
 if (app_dir.parent / "frontend").exists():
     frontend_path = app_dir.parent / "frontend"
@@ -116,6 +143,26 @@ else:
 
 if __name__ == "__main__":
     import uvicorn
+    
+    # Read PORT from Railway environment variable
+    # Railway sets PORT to a random port (e.g., 47380)
+    # This app MUST listen on that PORT for healthchecks to work
     port = int(os.getenv("PORT", 8000))
-    logger.info(f"🚀 Starting on port {port}")
-    uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
+    
+    # Print startup info
+    logger.info(f"=" * 50)
+    logger.info(f"🚀 Starting Prompt-to-Prod AI DevOps Agent")
+    logger.info(f"🔧 Environment: {os.getenv('ENVIRONMENT', 'development')}")
+    logger.info(f"📊 Port: {port}")
+    logger.info(f"🤖 LLM Model: {MODEL}")
+    logger.info(f"🔑 Groq API Key: {'✅ Set' if GROQ_API_KEY else '❌ Not set'}")
+    logger.info(f"=" * 50)
+    
+    # Start Uvicorn server on the assigned port
+    # This is critical for Railway deployment
+    uvicorn.run(
+        app,
+        host="0.0.0.0",  # Listen on all interfaces
+        port=port,        # Use Railway's assigned PORT
+        log_level="info"
+    )
