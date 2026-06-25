@@ -36,8 +36,8 @@ app.add_middleware(
 
 # Initialize Groq client
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-# Updated: mixtral-8x7b-32768 was decommissioned, use llama-3.1-70b-versatile instead
-MODEL = os.getenv("MODEL", "llama-3.1-70b-versatile")
+# Updated: mixtral-8x7b-32768 was decommissioned, use llama-3.3-70b-versatile instead
+MODEL = os.getenv("MODEL", "llama-3.3-70b-versatile")
 
 if not GROQ_API_KEY:
     logger.warning("⚠️  GROQ_API_KEY not set. Set it as an environment variable.")
