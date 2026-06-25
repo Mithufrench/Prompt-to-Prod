@@ -18,6 +18,10 @@
   },
   "envVariables": {
     "PYTHONUNBUFFERED": "1",
-    "PORT": "$PORT"
+    "PORT": "$PORT",
+    "GROQ_API_KEY": "$GROQ_API_KEY",
+    "MODEL": "mixtral-8x7b-32768",
+    "LOG_LEVEL": "INFO",
+    "ENVIRONMENT": "production"
   }
 }
