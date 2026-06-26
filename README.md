@@ -1,354 +1,372 @@
-# Prompt-to-Prod (P2P) Architecture
+# Promptly - AI DevOps Assistant
 
-## 📊 Complete AI-Powered DevOps Platform
+## 🚀 Enterprise-Grade AI-Powered DevOps Platform
 
-This is the full **Prompt-to-Prod (P2P)** architecture — an AI-powered self-service DevOps platform that automates infrastructure provisioning, configuration management, application deployment, and monitoring.
+**Promptly** is an intelligent AI DevOps assistant that automates infrastructure provisioning, DevOps workflows, and architecture design. Powered by Groq's Mixtral LLM with 5 specialized AI agents.
+
+## ✨ Key Features
+
+- **🤖 5 Specialized AI Agents**
+  - DevOps Expert: Infrastructure, CI/CD, deployment
+  - Software Architect: System design, scalability
+  - Kubernetes Expert: Container orchestration
+  - Infrastructure Coder: Terraform, Ansible, IaC
+  - Security Specialist: Security architecture, compliance
+
+- **⚡ Real-Time AI Responses**
+  - Powered by Groq's llama-3.1-70b-versatile model
+  - Sub-second response times
+  - Conversation memory & context awareness
+
+- **🏗️ Complete DevOps Automation**
+  - CI/CD pipeline generation
+  - Infrastructure as Code (Terraform, Ansible)
+  - Kubernetes manifest generation
+  - Architecture design & recommendations
+
+- **🎯 Intelligent Routing**
+  - Auto-recommends best agent for your query
+  - Multi-turn conversations
+  - Professional dashboard UI
+
+## 🏛️ Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                     User Interaction Layer                      │
-│    Web UI (React) + Streamlit + FastAPI + WebSocket Streaming   │
-└──────────────────────────┬──────────────────────────────────────┘
-                           │
-┌──────────────────────────▼──────────────────────────────────────┐
-│                   AI Agent Brain (LangChain)                    │
-│  ┌─────────────────────────────────────────────────────────┐   │
-│  │  RAG Knowledge Base + Multi-Agent Orchestration Engine  │   │
-│  │  • Llama 3.1 / GPT-4 / Claude via OpenAI               │   │
-│  │  • LangChain + LangGraph Agents                        │   │
-│  │  • Prompt Engineering & Chain-of-Thought              │   │
-│  │  • Tool Calling Layer                                 │   │
-│  └─────────────────────────────────────────────────────────┘   │
-└──────────────────────────┬──────────────────────────────────────┘
-                           │
-┌──────────────────────────▼──────────────────────────────────────┐
-│              Execution Tools Layer (Infrastructure)            │
-│  ├─ GitHub/GitLab (Repo creation, PRs, Actions)               │
-│  ├─ Terraform (IaC generation & provisioning)                 │
-│  ├─ Ansible (Configuration management)                        │
-│  ├─ Docker (Build & push images)                              │
-│  ├─ Kubernetes + ArgoCD (GitOps deployment)                   │
-│  ├─ Vault/Secrets Manager (Credential management)             │
-│  └─ Security Scanners (Trivy, OPA)                            │
-└──────────────────────────┬──────────────────────────────────────┘
-                           │
-┌──────────────────────────▼──────────────────────────────────────┐
-│         Infrastructure Layer (AWS EKS / GKE / AKS)             │
-│  • Self-healing & Auto-scaling clusters                        │
-│  • VPC with NAT gateways + private subnets                     │
-│  • RDS (PostgreSQL) with automated backups                     │
-│  • Load balancers + WAF                                        │
-└────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────┐
+│         Promptly Web Dashboard              │
+│    (Frontend: HTML/CSS/JavaScript)          │
+└──────────────────┬──────────────────────────┘
+                   │
+┌──────────────────▼──────────────────────────┐
+│      FastAPI Backend (Python)               │
+│  • 5 AI Agent System                        │
+│  • Groq LLM Integration                     │
+│  • REST API Endpoints                       │
+│  • WebSocket Support                        │
+└──────────────────┬──────────────────────────┘
+                   │
+┌──────────────────▼──────────────────────────┐
+│         Groq AI (llama-3.1-70b)             │
+│  • Real-time responses                      │
+│  • Multi-agent coordination                 │
+│  • Architecture design generation           │
+└─────────────────────────────────────────────┘
 
-┌──────────────────────────────────────────────────────────────────┐
-│        Observability & Monitoring (LangSmith + Prometheus)      │
-│  • Prometheus metrics collection                               │
-│  • Grafana dashboards for visualization                        │
-│  • LangSmith for LLM tracing & monitoring                      │
-│  • Loki for log aggregation                                    │
-│  • Alerts & incident management                               │
-└──────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────┐
+│      Infrastructure (Railway)               │
+│  • Docker containerization                  │
+│  • Auto-scaling deployment                  │
+│  • SSL/HTTPS support                        │
+│  • Health checks & monitoring               │
+└─────────────────────────────────────────────┘
 ```
 
 ## 📁 Project Structure
 
 ```
-Prompt-to-Prod/
-├── ai-agent/                    # LangChain AI agent with RAG
-│   ├── main.py                 # Enhanced agent with tools
-│   ├── config.py               # Configuration
-│   ├── Dockerfile              # Multi-stage build
-│   ├── requirements.txt         # Dependencies
-│   └── tests/                  # Unit tests
-├── frontend/                    # React web UI
-│   ├── public/
-│   │   └── index.html          # Web interface
-│   └── server.py               # Backend server
-├── terraform/                   # IaC for AWS infrastructure
-│   ├── main.tf                 # VPC, EKS, RDS
-│   ├── variables.tf            # Variables
-│   └── outputs.tf              # Outputs
+Promptly/
+├── ai-agent/                    # Python FastAPI backend
+│   ├── main.py                 # AI agent with Groq integration
+│   ├── requirements.txt         # Python dependencies
+│   └── config.py               # Configuration
+├── frontend/                    # Web UI
+│   ├── index.html              # Dashboard & chat interface
+│   ├── script.js               # Interactive features
+│   └── styles.css              # Professional styling
+├── Dockerfile                   # Multi-stage container build
+├── railway.json                 # Railway deployment config
+├── Procfile                     # Process definition
+├── docker-compose.yml           # Local dev environment
+├── terraform/                   # Infrastructure as Code
 ├── ansible/                     # Configuration management
-│   ├── playbooks/
-│   │   └── deploy-agent.yml    # Agent deployment playbook
-│   ├── roles/                  # Ansible roles
-│   ├── inventory/hosts         # Host inventory
-│   └── ansible.cfg             # Ansible config
-├── gitops/                      # GitOps configuration
-│   └── argocd-app.yaml         # ArgoCD application
 ├── manifests/                   # Kubernetes resources
-├── monitoring/                  # Prometheus + Grafana
-├── .github/workflows/           # GitHub Actions CI/CD
-│   ├── build-test-push.yml     # Build pipeline
-│   └── deploy.yml              # Deployment pipeline
-├── docker-compose.yml           # Full local development stack
 └── README.md                    # This file
 ```
 
 ## 🚀 Quick Start
 
-### Local Development with Docker Compose
+### Option 1: Deploy to Railway (Recommended)
 
 ```bash
-# Clone and setup
-cd Prompt-to-Prod
-cp .env.example .env
+# 1. Clone the repository
+git clone https://github.com/yourusername/Promptly.git
+cd Promptly
 
-# Add your API keys
-export OPENAI_API_KEY="sk-..."
-export DB_PASSWORD="your-secure-password"
+# 2. Set up your Groq API key
+# Get it from: https://console.groq.com/keys
 
-# Start all services
-docker compose up -d
+# 3. Connect to Railway
+# Go to https://railway.app/dashboard
+# Create new project → Connect GitHub repo
 
-# Access services
-- Frontend: http://localhost:3000
-- API: http://localhost:8000
-- Prometheus: http://localhost:9090
-- Grafana: http://localhost:3001 (admin/admin)
-- Vault: http://localhost:8200
-- PostgreSQL: localhost:5432
+# 4. Set environment variable in Railway
+GROQ_API_KEY=gsk_your_actual_key_here
+
+# 5. Deploy - Railway auto-deploys on git push
+git push origin main
 ```
 
-### Deploy to Kubernetes
+### Option 2: Local Development
 
 ```bash
-# 1. Create namespace
-kubectl apply -f manifests/namespace.yaml
+# 1. Clone repository
+git clone https://github.com/yourusername/Promptly.git
+cd Promptly
 
-# 2. Create secrets
-kubectl create secret generic ai-agent-secrets \
-  --from-literal=OPENAI_API_KEY=$OPENAI_API_KEY \
-  -n ai-agent
+# 2. Create virtual environment
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
 
-# 3. Deploy all resources
-kubectl apply -f manifests/
+# 3. Install dependencies
+pip install -r ai-agent/requirements.txt
 
-# 4. Install ArgoCD
-kubectl create namespace argocd
-kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+# 4. Set environment variables
+export GROQ_API_KEY="your_actual_key"
+export MODEL="llama-3.1-70b-versatile"
+export PORT=8000
 
-# 5. Create ArgoCD app
-kubectl apply -f gitops/argocd-app.yaml
+# 5. Run the application
+python ai-agent/main.py
+
+# 6. Open browser
+# Frontend: http://localhost:8000
+# API Docs: http://localhost:8000/docs
 ```
 
-### Provision Infrastructure with Terraform
+### Option 3: Docker Local
 
 ```bash
-# Initialize Terraform
-cd terraform
-terraform init -backend-config="bucket=p2p-terraform-state"
-
-# Plan
-terraform plan -var-file="environments/dev.tfvars"
-
-# Apply
-terraform apply -var-file="environments/dev.tfvars"
-
-# Get outputs
-terraform output
+docker-compose up -d
+# Access at http://localhost:8000
 ```
 
-### Configure with Ansible
+## 🤖 AI Agents Explained
 
+### DevOps Expert
+Generate production-ready CI/CD pipelines, infrastructure designs, and deployment strategies.
+
+Example: *"Generate a GitHub Actions pipeline for a Node.js app with Docker and Kubernetes"*
+
+### Software Architect
+Design scalable system architectures with best practices and trade-off analysis.
+
+Example: *"Design a microservices architecture for an e-commerce platform"*
+
+### Kubernetes Expert
+Create Kubernetes manifests, cluster configurations, and deployment strategies.
+
+Example: *"Generate a Kubernetes deployment with health checks and auto-scaling"*
+
+### Infrastructure Coder
+Generate Terraform, Ansible, and CloudFormation code for infrastructure provisioning.
+
+Example: *"Create Terraform code for AWS EKS cluster setup"*
+
+### Security Specialist
+Provide security architecture guidance and compliance recommendations.
+
+Example: *"Design a zero-trust security architecture for cloud applications"*
+
+## 🔗 API Endpoints
+
+All endpoints are available at `https://your-promptly-domain.railway.app`
+
+### GET `/health`
+Health check endpoint
 ```bash
-# Update inventory
-nano ansible/inventory/hosts
-
-# Run playbook
-cd ansible
-ansible-playbook playbooks/deploy-agent.yml
+curl https://your-promptly-domain.railway.app/health
 ```
 
-## 🤖 AI Agent Capabilities
-
-The LangChain-powered agent can:
-
-1. **Understand natural language requirements** from users
-2. **Query knowledge base** (RAG) for best practices and runbooks
-3. **Call tools** for infrastructure operations:
-   - Create GitHub repositories
-   - Generate and apply Terraform configs
-   - Build and push Docker images
-   - Deploy to Kubernetes
-   - Manage secrets in Vault
-4. **Multi-step orchestration**: Coordinate multiple tools in sequence
-5. **Stream responses** via WebSocket for real-time feedback
-6. **Learn from history** using conversation memory
-
-### Example Requests
-
-```
-"Set up a production-ready Node.js app with database and monitoring"
-→ Agent creates repo, Dockerfile, Terraform config, k8s manifests, monitoring setup
-
-"Deploy a new microservice to staging"
-→ Agent builds image, pushes to registry, updates deployment, verifies rollout
-
-"What are the best practices for securing Kubernetes clusters?"
-→ Agent queries knowledge base and provides guidance with resources
+### POST `/chat`
+Chat with AI assistant
+```bash
+curl -X POST https://your-promptly-domain.railway.app/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "Generate a Docker CI/CD pipeline",
+    "agent_type": "devops_expert"
+  }'
 ```
 
-## 📊 Monitoring & Observability
+### GET `/agents`
+List available agents
+```bash
+curl https://your-promptly-domain.railway.app/agents
+```
 
-### Prometheus Metrics
-- Agent request latency and error rates
-- LLM token usage and cost tracking
-- Kubernetes cluster health
-- Infrastructure utilization
+### POST `/agents/recommend`
+Get AI's recommended agent for your query
+```bash
+curl -X POST https://your-promptly-domain.railway.app/agents/recommend \
+  -H "Content-Type: application/json" \
+  -d '{"query": "Help me with Kubernetes"}'
+```
 
-### Grafana Dashboards
-- AI Agent Performance
-- Infrastructure Health
-- Cost Analysis
-- Security Events
+### POST `/architecture/design`
+Generate complete architecture design
+```bash
+curl -X POST https://your-promptly-domain.railway.app/architecture/design \
+  -H "Content-Type: application/json" \
+  -d '{
+    "project_type": "E-commerce Platform",
+    "requirements": "High availability, scalability, multi-region"
+  }'
+```
 
-### LangSmith Integration
-- LLM trace tracking
-- Prompt engineering feedback
-- Error analysis
-- Performance optimization
+### GET `/metrics`
+System metrics and status
+```bash
+curl https://your-promptly-domain.railway.app/metrics
+```
 
-## 🔄 CI/CD Pipeline
-
-### GitHub Actions Workflows
-
-**`build-test-push.yml`**
-1. Build Docker image with BuildKit
-2. Run unit tests
-3. Security scanning (Docker Scout)
-4. Push to container registry
-5. Deploy to Kubernetes
-
-**`deploy.yml`**
-1. Update Kubernetes deployment
-2. Wait for rollout completion
-3. Verify health checks
-
-Trigger on:
-- Push to main/develop
-- Pull requests
-- Version tags (v1.0.0)
-
-## 🔐 Security Features
-
-- ✅ Non-root container user
-- ✅ Network policies for pod-to-pod communication
-- ✅ Secrets management with Vault
-- ✅ RBAC for Kubernetes access
-- ✅ Container image scanning (Trivy, OPA)
-- ✅ Secret scanning in code (GitGuardian)
-- ✅ Infrastructure as Code compliance
-- ✅ Audit logging for all operations
-
-## 📝 Configuration
+## ⚙️ Configuration
 
 ### Environment Variables
 
 ```env
-# OpenAI
-OPENAI_API_KEY=sk-...
+# Groq LLM Configuration
+GROQ_API_KEY=gsk_your_actual_api_key          # Required!
+MODEL=llama-3.1-70b-versatile                 # AI model
 
-# AWS
-AWS_REGION=us-east-1
-AWS_ACCESS_KEY_ID=...
-AWS_SECRET_ACCESS_KEY=...
+# Server Configuration
+PORT=8000                                      # Port (auto-assigned on Railway)
+ENVIRONMENT=production                         # production or development
+LOG_LEVEL=INFO                                # Logging level
 
-# Database
-DB_PASSWORD=your-password
-DB_HOST=postgres
-DB_NAME=p2pdb
-
-# LangSmith (optional)
-LANGSMITH_API_KEY=...
-LANGSMITH_PROJECT=...
-
-# Vault
-VAULT_ADDR=http://localhost:8200
-VAULT_TOKEN=root
+# Python Configuration
+PYTHONUNBUFFERED=1                            # Real-time logging
 ```
 
-## 🧪 Testing
+### How to Get Groq API Key
 
+1. Visit https://console.groq.com
+2. Sign up (free account)
+3. Go to API Keys section
+4. Create new API key
+5. Copy and use in your environment
+
+## 🚀 Deployment on Railway
+
+### Prerequisites
+- GitHub account
+- Groq API key
+- Railway account (free tier available)
+
+### Steps
+
+1. **Fork/Clone Repository**
+   ```bash
+   git clone https://github.com/yourusername/Promptly.git
+   cd Promptly
+   ```
+
+2. **Push to GitHub**
+   ```bash
+   git add .
+   git commit -m "Initial Promptly deployment"
+   git push origin main
+   ```
+
+3. **Connect to Railway**
+   - Go to https://railway.app/dashboard
+   - Click "New Project"
+   - Select "Deploy from GitHub"
+   - Choose your Promptly repository
+   - Follow setup wizard
+
+4. **Add Environment Variables**
+   - In Railway dashboard
+   - Click your service
+   - Variables tab
+   - Add `GROQ_API_KEY` with your actual key
+
+5. **Deploy**
+   - Railway auto-deploys when you push to GitHub
+   - Watch deployment progress in dashboard
+   - Get your live URL once deployment completes
+
+## 📊 Monitoring
+
+### Health Check
 ```bash
-# Unit tests
-pytest ai-agent/tests/ -v
-
-# Integration tests
-docker compose exec ai-agent pytest tests/integration/ -v
-
-# Load testing
-locust -f tests/load_test.py
-
-# Security scanning
-trivy image p2p-agent:latest
+curl https://your-promptly-domain.railway.app/health
 ```
 
-## 📈 Scaling
+Expected response:
+```json
+{
+  "status": "healthy",
+  "service": "promptly-ai",
+  "name": "Promptly",
+  "version": "3.1.0",
+  "llm": "groq",
+  "model": "llama-3.1-70b-versatile",
+  "ai_agents": ["devops_expert", "architect", "kubernetes_expert", "infrastructure_coder", "security_specialist"]
+}
+```
 
-### Horizontal Scaling
-- Multi-node EKS cluster with auto-scaling groups
-- Load balancer distributes traffic
-- Stateless agent instances
+## 🔒 Security
 
-### Vertical Scaling
-- Increase pod resource limits
-- Use GPU nodes for LLM inference
-- Database read replicas
-
-### Cost Optimization
-- Spot instances for non-critical workloads
-- Reserved instances for stable baseline
-- Auto-scaling based on metrics
+- ✅ API key secured via environment variables
+- ✅ No credentials in code
+- ✅ HTTPS/SSL enabled on Railway
+- ✅ CORS configured for web requests
+- ✅ Error messages don't leak sensitive info
+- ✅ Rate limiting ready (implement if needed)
 
 ## 🛠️ Troubleshooting
 
-### Agent not responding
-```bash
-docker logs ai-agent
-kubectl logs -n ai-agent deployment/ai-agent
-```
+### Application not responding
+1. Check Railway deployment status
+2. Verify GROQ_API_KEY is set in Railway variables
+3. Check logs: Railway dashboard → Logs tab
 
-### Deployment stuck
-```bash
-kubectl describe pod <pod-name> -n ai-agent
-kubectl events -n ai-agent
-```
+### Model not working
+- Ensure GROQ_API_KEY is set correctly
+- Verify key hasn't expired
+- Check API key permissions in Groq console
 
-### Database connection issues
-```bash
-kubectl port-forward svc/postgres 5432:5432 -n ai-agent
-psql -h localhost -U admin -d p2pdb
-```
+### Chat returning errors
+1. Check Railway logs for error details
+2. Verify Groq API key is valid
+3. Try a simpler query first
 
-## 📚 Resources
+## 📚 Technologies Used
 
-- [LangChain Documentation](https://python.langchain.com/)
-- [FastAPI Documentation](https://fastapi.tiangolo.com/)
-- [Terraform AWS Provider](https://registry.terraform.io/providers/hashicorp/aws/latest/docs)
-- [Ansible Documentation](https://docs.ansible.com/)
-- [Kubernetes Documentation](https://kubernetes.io/docs/)
-- [ArgoCD Documentation](https://argo-cd.readthedocs.io/)
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit changes: `git commit -m 'Add amazing feature'`
-4. Push to branch: `git push origin feature/amazing-feature`
-5. Submit a pull request
+- **Backend**: FastAPI (Python)
+- **AI/LLM**: Groq + llama-3.1-70b-versatile
+- **Frontend**: HTML/CSS/JavaScript
+- **Deployment**: Railway, Docker
+- **Infrastructure**: Terraform, Ansible, Kubernetes
 
 ## 📄 License
 
 MIT License - see LICENSE file for details
 
-## 🎯 Next Steps
+## 🤝 Contributing
 
-- [ ] Set up AWS account and configure credentials
-- [ ] Deploy infrastructure with Terraform
-- [ ] Configure CI/CD secrets in GitHub
-- [ ] Deploy first application through the platform
-- [ ] Set up monitoring and alerting
-- [ ] Configure backup and disaster recovery
-- [ ] Document runbooks and playbooks
-- [ ] Set up team access and RBAC
+1. Fork the repository
+2. Create feature branch: `git checkout -b feature/amazing-feature`
+3. Commit: `git commit -m 'Add amazing feature'`
+4. Push: `git push origin feature/amazing-feature`
+5. Submit pull request
+
+## 🎯 Roadmap
+
+- [ ] Add streaming responses
+- [ ] Support for multiple LLM providers
+- [ ] User authentication & API keys
+- [ ] Query history & analytics
+- [ ] Advanced prompt engineering
+- [ ] Integration with external tools
+- [ ] Mobile app
+
+## 📞 Support
+
+- Issues: GitHub Issues
+- Discussions: GitHub Discussions
+- Email: support@promptly.ai
+
+---
+
+**Promptly** - Your AI DevOps Assistant. Always ready to help. 🚀

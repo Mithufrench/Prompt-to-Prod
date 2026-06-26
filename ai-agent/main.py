@@ -1,6 +1,6 @@
 """
-Prompt-to-Prod - AI DevOps Platform with Advanced Groq LLM Integration
-Enhanced AI Agent for Real Architecture Outcomes - v3.1 (Updated Model)
+Promptly - AI DevOps Platform with Advanced Groq LLM Integration
+Enterprise-Grade AI Assistant for Infrastructure & DevOps - v3.1
 """
 from fastapi import FastAPI
 from starlette.staticfiles import StaticFiles
@@ -23,7 +23,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="Prompt-to-Prod AI DevOps", version="3.1.0")
+app = FastAPI(title="Promptly - AI DevOps Assistant", version="3.1.0")
 
 # Add CORS middleware
 app.add_middleware(
@@ -36,7 +36,6 @@ app.add_middleware(
 
 # Initialize Groq client
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-# Updated: mixtral-8x7b-32768 was decommissioned, use llama-3.1-70b-versatile instead
 MODEL = os.getenv("MODEL", "llama-3.1-70b-versatile")
 
 if not GROQ_API_KEY:
@@ -166,7 +165,7 @@ def process_query_with_groq(query: str, agent_type: str = "devops_expert",
         
         messages = []
         
-        # Add system message as first message (Groq expects system in messages array)
+        # Add system message as first message
         system_prompt = get_system_prompt(agent_type)
         messages.append({
             "role": "system",
@@ -187,7 +186,7 @@ def process_query_with_groq(query: str, agent_type: str = "devops_expert",
             "content": query
         })
         
-        # Call Groq API WITHOUT system parameter (it's in messages)
+        # Call Groq API
         response = client.chat.completions.create(
             model=MODEL,
             max_tokens=2048,
@@ -273,7 +272,8 @@ async def health_check():
     """Health check endpoint"""
     return {
         "status": "healthy",
-        "service": "ai-devops-platform",
+        "service": "promptly-ai",
+        "name": "Promptly",
         "version": "3.1.0",
         "llm": "groq",
         "model": MODEL,
@@ -282,7 +282,7 @@ async def health_check():
 
 @app.post("/chat", response_model=QueryResponse)
 async def chat(request: QueryRequest):
-    """Chat with AI assistant powered by Groq"""
+    """Chat with Promptly AI Assistant"""
     try:
         logger.info(f"Chat request: {request.query[:100]}...")
         
@@ -304,7 +304,7 @@ async def chat(request: QueryRequest):
 
 @app.get("/agents")
 async def list_agents():
-    """List available AI agents"""
+    """List available Promptly AI agents"""
     return {
         "agents": [
             {
@@ -373,7 +373,7 @@ async def design_app_architecture(request: ArchitectureRequest):
 
 @app.get("/metrics")
 async def metrics():
-    """Get system metrics"""
+    """Get Promptly system metrics"""
     return {
         "agent_requests_total": 0,
         "agent_errors_total": 0,
@@ -410,24 +410,20 @@ if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
     
     logger.info(f"=" * 60)
-    logger.info(f"🚀 Starting Prompt-to-Prod AI DevOps Agent v3.1")
-    logger.info(f"🔧 Environment: {os.getenv('ENVIRONMENT', 'development')}")
+    logger.info(f"🚀 Starting Promptly - AI DevOps Assistant v3.1")
+    logger.info(f"🏢 Service: Promptly")
+    logger.info(f"🔧 Environment: {os.getenv('ENVIRONMENT', 'production')}")
     logger.info(f"📊 Port: {port}")
     logger.info(f"🤖 LLM Model: {MODEL}")
-    logger.info(f"   (Note: mixtral-8x7b-32768 was decommissioned)")
     logger.info(f"🔑 Groq API Key: {'✅ Set' if GROQ_API_KEY else '❌ Not set'}")
-    logger.info(f"🧠 AI Agents Available: {len(SYSTEM_PROMPTS)}")
-    logger.info(f"  - DevOps Expert")
-    logger.info(f"  - Software Architect")
-    logger.info(f"  - Kubernetes Expert")
-    logger.info(f"  - Infrastructure Coder")
-    logger.info(f"  - Security Specialist")
-    logger.info(f"✨ Features:")
-    logger.info(f"  - Multi-agent AI system")
-    logger.info(f"  - Conversation history support")
-    logger.info(f"  - Streaming responses")
-    logger.info(f"  - Architecture design")
-    logger.info(f"  - Agent recommendation")
+    logger.info(f"🧠 AI Agents: 5 specialized agents available")
+    logger.info(f"✨ Promptly Features:")
+    logger.info(f"  ✓ Multi-agent AI system with 5 specialized agents")
+    logger.info(f"  ✓ Real-time Groq LLM integration (llama-3.1-70b-versatile)")
+    logger.info(f"  ✓ Conversation memory & context awareness")
+    logger.info(f"  ✓ DevOps architecture & system design")
+    logger.info(f"  ✓ Intelligent agent routing & recommendations")
+    logger.info(f"💡 Promptly is live and ready to assist!")
     logger.info(f"=" * 60)
     
     uvicorn.run(
